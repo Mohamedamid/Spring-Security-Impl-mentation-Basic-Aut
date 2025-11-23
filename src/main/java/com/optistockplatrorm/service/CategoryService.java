@@ -22,59 +22,19 @@ public class CategoryService {
     @Autowired
     private CategoryMapper categoryMapper;
 
-    @Autowired
-    private HttpSession session;
-
-    private void checkAccess(String action) {
-        Object roleObj = session.getAttribute("role");
-
-        if (roleObj == null) {
-            throw new RuntimeException("Utilisateur non connecté.");
-        }
-
-        Role role = (Role) roleObj;
-
-        switch (action) {
-            case "CREATE":
-            case "READ":
-                if (role != Role.ADMIN && role != Role.WAREHOUSE_MANAGER) {
-                    throw new RuntimeException("Accès refusé : seuls les administrateurs ou les gestionnaires d’entrepôt peuvent effectuer cette action.");
-                }
-                break;
-
-            case "UPDATE":
-                if (role != Role.ADMIN) {
-                    throw new RuntimeException("Accès refusé : seul un administrateur peut modifier une catégorie.");
-                }
-                break;
-
-            case "DELETE":
-                if (role != Role.ADMIN) {
-                    throw new RuntimeException("Accès refusé : seul un administrateur peut supprimer une catégorie.");
-                }
-                break;
-
-            default:
-                throw new RuntimeException("Action non autorisée.");
-        }
-    }
-
     public Page<CategoryResponseDTO> getAllCategory(int page, int size) {
-        checkAccess("READ");
 
         Pageable pageable = PageRequest.of(page, size);
         return categoryRepository.findAll(pageable).map(categoryMapper::toDto);
     }
 
     public CategoryResponseDTO getCategoryById(Long id) {
-        checkAccess("READ");
 
         Category category = categoryRepository.findById(id).orElseThrow(() -> new RuntimeException("Catégorie introuvable avec l'identifiant : " + id));
         return categoryMapper.toDto(category);
     }
 
     public CategoryResponseDTO createCategory(CategoryRequestDTO dto) {
-        checkAccess("CREATE");
 
         Category category = categoryMapper.toEntity(dto);
         Category saved = categoryRepository.save(category);
@@ -82,7 +42,6 @@ public class CategoryService {
     }
 
     public CategoryResponseDTO updateCategory(Long id, CategoryRequestDTO dto) {
-        checkAccess("UPDATE");
 
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Catégorie introuvable avec l'identifiant : " + id));
@@ -96,7 +55,6 @@ public class CategoryService {
     }
 
     public void deleteCategory(Long id) {
-        checkAccess("DELETE");
 
         if (!categoryRepository.existsById(id)) {
             throw new RuntimeException("Catégorie introuvable avec l'identifiant : " + id);
